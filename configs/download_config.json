@@ -1,0 +1,11 @@
+{
+	"1":{
+		"sector_number": 1, 
+		"catalogues_folder": "./data/catalogues/tess_download_scripts/",
+		"out_dir_tess": "./data/fits_files/",
+		"start_index": 0,
+		"max_downloads": 1500,
+		"log_file": "./logs/download_tess_lc.log",
+		"num_threads": 4
+	}
+}

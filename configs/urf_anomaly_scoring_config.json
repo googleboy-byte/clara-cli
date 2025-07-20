@@ -1,0 +1,13 @@
+{
+    "p3model_path": "./models/urf4_model_variant_n300_d23.75_c2_n50ppm.pkl",
+    "p9model_path": "./models/urf4_model_variant_n300_d24.5_c2_n225ppm.pkl",
+    "p5model_path": "./models/urf4_model_variant_n300_d25.25_c2_n225ppm.pkl",
+    "input_dirs" : ["./data/fits_files/1"],
+    "output_dir" : "./results/anomaly_scores/",
+    "max_workers" : 4,
+    "log_file" : "./logs/anomaly_scoring.log",
+    "use_p3": true,
+    "use_p5": false,
+    "use_p9": true,
+    "calculate_wrss_p3p9": true
+}

@@ -1,0 +1,11 @@
+{
+    "fits_dir": "./data/fits_files/1/",
+    "input_df_path": "./results/anomaly_scores/wrss_p3p9_20250719_123442.csv",
+    "output_dir": "./results/similarity_scores/",
+    "min_similarity_threshold": 0.6,
+    "simbad_labelled_pca_model_path": "./models/saved_pca_features_s2_toi_simbad_labelled/pca_model_s2_toi_simbad_labelled.pkl",
+    "simbad_labelled_pca_features_path": "./models/saved_pca_features_s2_toi_simbad_labelled/reduced_features_s2_toi_simbad_labelled.csv",
+    "max_workers": 4,
+    "gt_wrss_threshold": 0.0001,
+    "save_label_groups": ["planet_like", "binary_star"]
+}   

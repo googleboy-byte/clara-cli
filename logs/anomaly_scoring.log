@@ -1,0 +1,3 @@
+2025-07-19 12:28:29 Multiprocessing scoring complete. Results in: ./results/anomaly_scores/anomaly_scores_p3_20250719_122203.csv
+2025-07-19 12:34:40 Multiprocessing scoring complete. Results in: ./results/anomaly_scores/anomaly_scores_p9_20250719_122831.csv
+2025-07-19 12:34:42 Calculating WRSS for p3 and p9 models

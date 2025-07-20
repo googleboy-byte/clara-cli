@@ -1,0 +1,103 @@
+2025-07-19 12:03:31 Downloading with config: ./configs/download_config.json
+2025-07-19 12:03:32 Downloading sector 1 with config: {'sector_number': 1, 'catalogues_folder': './data/catalogues/tess_download_scripts/', 'out_dir_tess': './data/fits_files/', 'start_index': 0, 'max_downloads': 1500, 'log_file': './logs/download_tess_lc.log', 'num_threads': 4} 
+2025-07-19 12:21:56 LOG: 2025-07-19 12:21:56 Last successfully downloaded: tess2018206045859-s0001-0000000277023834-0120-s_lc.fits
+2025-07-19 12:22:00 Scoring anomalies with config: ./configs/urf_anomaly_scoring_config.json
+2025-07-19 12:22:01 Scoring anomalies in ./data/fits_files/1
+2025-07-19 12:22:02 Scoring anomalies in ./data/fits_files/1 with p3 model
+2025-07-19 12:28:29 LOG: 2025-07-19 12:28:29 Multiprocessing scoring complete. Results in: ./results/anomaly_scores/anomaly_scores_p3_20250719_122203.csv
+2025-07-19 12:28:30 Scoring anomalies in ./data/fits_files/1 with p9 model
+2025-07-19 12:34:40 LOG: 2025-07-19 12:34:40 Multiprocessing scoring complete. Results in: ./results/anomaly_scores/anomaly_scores_p9_20250719_122831.csv
+2025-07-19 12:34:41 Calculating WRSS for p3 and p9 models
+2025-07-19 12:34:42 LOG: 2025-07-19 12:34:42 Calculating WRSS for p3 and p9 models
+2025-07-19 12:34:44 All tasks complete
+2025-07-19 12:34:45 Results saved in ./results/anomaly_scores/
+2025-07-20 10:47:23 Meta message: Sim score test 1
+2025-07-20 10:47:24 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 10:48:07 Meta message: Sim score test 2
+2025-07-20 10:48:08 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 10:48:11 System stats thread did not stop gracefully
+2025-07-20 10:49:03 Meta message: Sim score test 3
+2025-07-20 10:49:04 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 10:49:34 Meta message: Sim score test 3
+2025-07-20 10:49:35 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 10:51:17 Meta message: Sim score test 4
+2025-07-20 10:51:18 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 10:53:04 Meta message: Sim score test 5
+2025-07-20 10:53:05 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 10:54:48 Meta message: Sim score test 7
+2025-07-20 10:54:49 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 10:55:27 Meta message: Sim score test 8
+2025-07-20 10:55:28 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 10:58:57 Meta message: Sim score test multiprocess 1
+2025-07-20 10:58:58 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 10:59:01 System stats thread did not stop gracefully
+2025-07-20 11:00:12 Meta message: Sim score test multiprocess 2
+2025-07-20 11:00:13 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:00:16 System stats thread did not stop gracefully
+2025-07-20 11:01:37 Meta message: Sim score test multiprocess 3
+2025-07-20 11:01:38 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:01:41 System stats thread did not stop gracefully
+2025-07-20 11:03:37 Meta message: Sim score test multiprocess 4
+2025-07-20 11:03:38 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:04:39 Meta message: Sim score test multiprocess 5
+2025-07-20 11:04:40 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:07:04 Meta message: Sim score test multiprocess 6
+2025-07-20 11:07:05 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:08:07 Meta message: Sim score test multiprocess 6
+2025-07-20 11:08:08 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:09:02 Meta message: Sim score test multiprocess 7
+2025-07-20 11:09:03 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:10:09 Meta message: Sim score test multiprocess 7
+2025-07-20 11:10:10 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:12:44 Meta message: Sim score test multiprocess 8
+2025-07-20 11:12:45 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:28:53 Meta message: Sim score test multiprocess 9
+2025-07-20 11:28:54 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:37:26 Meta message: Sim score test multiprocess 10
+2025-07-20 11:37:27 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:39:02 Meta message: Sim score test multiprocess 11
+2025-07-20 11:39:03 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:41:50 Meta message: Sim score test multiprocess 12
+2025-07-20 11:41:51 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:48:48 Meta message: Sim score test multiprocess 13
+2025-07-20 11:48:49 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:51:36 Cosine similarity matching complete. Results saved in ./results/similarity_scores/ with 711 matches. Label groups: label_group
+outlier        460
+stellar        199
+planet_like     45
+binary_star      7
+Name: count, dtype: int64
+2025-07-20 11:56:16 Meta message: Sim score test multiprocess 14
+2025-07-20 11:56:17 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 11:56:18 Config details: {'fits_dir': './data/fits_files/1/', 'input_df_path': './results/anomaly_scores/wrss_p3p9_20250719_123442.csv', 'output_dir': './results/similarity_scores/', 'min_similarity_threshold': 0.6, 'simbad_labelled_pca_model_path': './models/saved_pca_features_s2_toi_simbad_labelled/pca_model_s2_toi_simbad_labelled.pkl', 'simbad_labelled_pca_features_path': './models/saved_pca_features_s2_toi_simbad_labelled/reduced_features_s2_toi_simbad_labelled.csv', 'max_workers': 4}
+2025-07-20 11:59:15 Cosine similarity matching complete. Results saved in ./results/similarity_scores/ with 711 matches. Label groups: label_group
+outlier        460
+stellar        199
+planet_like     45
+binary_star      7
+Name: count, dtype: int64
+2025-07-20 12:01:00 Meta message: Sim score test multiprocess 15
+2025-07-20 12:01:01 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 12:01:02 Config details: {'fits_dir': './data/fits_files/1/', 'input_df_path': './results/anomaly_scores/wrss_p3p9_20250719_123442.csv', 'output_dir': './results/similarity_scores/', 'min_similarity_threshold': 0.6, 'simbad_labelled_pca_model_path': './models/saved_pca_features_s2_toi_simbad_labelled/pca_model_s2_toi_simbad_labelled.pkl', 'simbad_labelled_pca_features_path': './models/saved_pca_features_s2_toi_simbad_labelled/reduced_features_s2_toi_simbad_labelled.csv', 'max_workers': 4, 'gt_wrss_threshold': 0.35}
+2025-07-20 12:01:47 Cosine similarity matching complete. Results saved in ./results/similarity_scores/ with 175 matches. Label groups: label_group
+outlier        114
+stellar         49
+planet_like     11
+binary_star      1
+Name: count, dtype: int64. GT WRSS threshold: 0.35
+2025-07-20 12:35:48 Meta message: Sim score test multiprocess 16
+2025-07-20 12:35:49 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 12:35:50 Config details: {'fits_dir': './data/fits_files/1/', 'input_df_path': './results/anomaly_scores/wrss_p3p9_20250719_123442.csv', 'output_dir': './results/similarity_scores/', 'min_similarity_threshold': 0.6, 'simbad_labelled_pca_model_path': './models/saved_pca_features_s2_toi_simbad_labelled/pca_model_s2_toi_simbad_labelled.pkl', 'simbad_labelled_pca_features_path': './models/saved_pca_features_s2_toi_simbad_labelled/reduced_features_s2_toi_simbad_labelled.csv', 'max_workers': 4, 'gt_wrss_threshold': 0.0001}
+2025-07-20 12:38:40 Cosine similarity matching complete. Results saved in ./results/similarity_scores/cosine_similarity_scores_20250720_123840.csv with 702 matches. Label groups: label_group
+outlier        452
+stellar        198
+planet_like     45
+binary_star      7
+Name: count, dtype: int64. GT WRSS threshold: 0.0001
+2025-07-20 13:12:28 Meta message: Sim score test multiprocess 17
+2025-07-20 13:12:29 Matching fits by cosine similarity with config: ./configs/cosine_similarity_config.json
+2025-07-20 13:12:30 Config details: {'fits_dir': './data/fits_files/1/', 'input_df_path': './results/anomaly_scores/wrss_p3p9_20250719_123442.csv', 'output_dir': './results/similarity_scores/', 'min_similarity_threshold': 0.6, 'simbad_labelled_pca_model_path': './models/saved_pca_features_s2_toi_simbad_labelled/pca_model_s2_toi_simbad_labelled.pkl', 'simbad_labelled_pca_features_path': './models/saved_pca_features_s2_toi_simbad_labelled/reduced_features_s2_toi_simbad_labelled.csv', 'max_workers': 4, 'gt_wrss_threshold': 0.0001, 'save_label_groups': ['planet_like', 'binary_star']}
+2025-07-20 13:15:20 Cosine similarity matching complete. Results saved in ./results/similarity_scores/cosine_similarity_scores_20250720_131520.csv with 702 matches. Label groups: label_group
+planet_like    45
+binary_star     7
+Name: count, dtype: int64. GT WRSS threshold: 0.0001

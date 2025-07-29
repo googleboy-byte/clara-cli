@@ -11,26 +11,78 @@ from clara_benchmark.urf_scoring.wrss import *
 import clara_benchmark.utils.suppress_warnings as suppress_warnings
 from clara_benchmark.cosine_similarity.cos_score import *
 from tqdm import tqdm
+from clara_benchmark.utils.help_text import *
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="CLARA Benchmark CLI")
+    parser = argparse.ArgumentParser(
+        description=MAIN_DESCRIPTION,
+        epilog=MAIN_EPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
 
-    subparsers = parser.add_subparsers(dest="command", help="Sub-commands")
+    subparsers = parser.add_subparsers(
+        dest="command", 
+        help=SUBCOMMANDS_HELP,
+        title=SUBCOMMANDS_TITLE,
+        description=SUBCOMMANDS_DESCRIPTION
+    )
 
-    # run command
-    run_parser = subparsers.add_parser("download", help="Run benchmark pipeline")
-    run_parser.add_argument("--config", type=str, required=False, default="./configs/download_config.json", help="Path to JSON config file")
+    # Download command
+    run_parser = subparsers.add_parser(
+        "download", 
+        help=DOWNLOAD_HELP,
+        description=DOWNLOAD_DESCRIPTION,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    run_parser.add_argument(
+        "--config", 
+        type=str, 
+        required=False, 
+        default="./configs/download_config.json", 
+        help=get_config_help("download")
+    )
     add_dynamic_config_arguments(run_parser, "./configs/download_config.json")
 
-    anomaly_parser = subparsers.add_parser("score", help="Score anomalies")
-    anomaly_parser.add_argument("--config", type=str, required=False, default="./configs/urf_anomaly_scoring_config.json", help="Path to JSON config file")
+    # Score command
+    anomaly_parser = subparsers.add_parser(
+        "score", 
+        help=SCORE_HELP,
+        description=SCORE_DESCRIPTION,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    anomaly_parser.add_argument(
+        "--config", 
+        type=str, 
+        required=False, 
+        default="./configs/urf_anomaly_scoring_config.json", 
+        help=get_config_help("scoring")
+    )
     add_dynamic_config_arguments(anomaly_parser, "./configs/urf_anomaly_scoring_config.json")
 
-    sim_score_parser = subparsers.add_parser("sim", help="Score anomalies")
-    sim_score_parser.add_argument("--config", type=str, required=False, default="./configs/cosine_similarity_config.json", help="Path to JSON config file")
+    # Similarity command
+    sim_score_parser = subparsers.add_parser(
+        "sim", 
+        help=SIM_HELP,
+        description=SIM_DESCRIPTION,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    sim_score_parser.add_argument(
+        "--config", 
+        type=str, 
+        required=False, 
+        default="./configs/cosine_similarity_config.json", 
+        help=get_config_help("similarity matching")
+    )
     add_dynamic_config_arguments(sim_score_parser, "./configs/cosine_similarity_config.json")
     
-    parser.add_argument("--meta_message", type=str, required=False, default="", help="Meta message for the run")
+    # Global meta message
+    parser.add_argument(
+        "--meta_message", 
+        type=str, 
+        required=False, 
+        default="", 
+        help=META_MESSAGE_HELP
+    )
 
     return parser.parse_args()
 
@@ -59,12 +111,12 @@ def add_dynamic_config_arguments(parser, config_path):
             else:
                 arg_type = str
             
-            # Add the argument
+            # Add the argument with help text from help_text module
             parser.add_argument(
                 f"--{key}", 
                 type=arg_type, 
                 required=False, 
-                help=f"Override {key} from config (default: {value})"
+                help=get_override_help_text(key, value)
             )
     except (FileNotFoundError, json.JSONDecodeError) as e:
         # If config file doesn't exist or is invalid, skip adding arguments

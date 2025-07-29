@@ -26,6 +26,7 @@ CLARA CLI is a multi-functional astronomical data processing pipeline designed f
 - **Automatic directory creation** and file management
 - **Robust error handling** with graceful degradation
 - **Cross-platform compatibility** (Linux, macOS, Windows)
+- **Comprehensive help system** with modular documentation organization
 
 ## Installation
 
@@ -114,11 +115,11 @@ python -m clara_benchmark.cli sim --config ./configs/cosine_similarity_config.js
 ```json
 {
     "fits_dir": "./data/fits_files/1/",
-    "input_df_path": "./results/anomaly_scores/anomaly_scores_p3_20240101_120000.csv",
+    "input_df_path": "./results/anomaly_scores/wrss_p3p9_20240101_120000.csv",
+    "input_df_sql": "SELECT filename, score_weighted_root_sumnorm FROM input_df WHERE score_weighted_root_sumnorm >= 0.0001 ORDER BY score_weighted_root_sumnorm DESC",
     "output_dir": "./results/similarity_scores/",
-    "min_similarity_threshold": 0.3,
-    "gt_wrss_threshold": 0.5,
-    "save_label_groups": ["planet_like", "binary_star", "stellar"],
+    "min_similarity_threshold": 0.6,
+    "save_label_groups": ["planet_like", "binary_star"],
     "simbad_labelled_pca_model_path": "./models/simbad_pca_model.pkl",
     "simbad_labelled_pca_features_path": "./data/simbad_features.csv",
     "max_workers": 4
@@ -128,6 +129,27 @@ python -m clara_benchmark.cli sim --config ./configs/cosine_similarity_config.js
 ### Global Options
 - `--meta_message`: Add a descriptive message to the run logs
 - `--config`: Specify custom configuration file path
+
+### Command-Line Overrides
+All configuration parameters can be overridden via command-line arguments. The system automatically generates `--parameter_name` arguments for every key in the config file.
+
+**Examples:**
+```bash
+# Override specific parameters for download
+python -m clara_benchmark.cli download --num_threads 8 --max_downloads 2000
+
+# Override parameters for scoring
+python -m clara_benchmark.cli score --max_workers 6 --use_p3 true
+
+# Override parameters for similarity matching
+python -m clara_benchmark.cli sim --input_df_sql "SELECT * FROM input_df WHERE score_weighted_root_sumnorm >= 0.001" --min_similarity_threshold 0.7
+```
+
+**Automatic Type Detection:**
+- Boolean values: `--use_p3 true`
+- Integer values: `--max_workers 4`
+- Float values: `--min_similarity_threshold 0.6`
+- String values: `--output_dir "./custom_output/"`
 
 ## Configuration
 
@@ -157,12 +179,45 @@ python -m clara_benchmark.cli sim --config ./configs/cosine_similarity_config.js
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `fits_dir` | Directory containing FITS files | Required |
-| `input_df_path` | Path to input DataFrame | Required |
+| `input_df_path` | Path to input CSV file | Required |
+| `input_df_sql` | Full SQL query to select and filter input data | Required |
 | `output_dir` | Output directory for results | Required |
-| `min_similarity_threshold` | Minimum similarity score | 0.3 |
-| `gt_wrss_threshold` | Ground truth WRSS threshold | Required |
+| `min_similarity_threshold` | Minimum similarity score | 0.6 |
 | `save_label_groups` | Label groups to save | Required |
+| `simbad_labelled_pca_model_path` | Path to PCA model file | Required |
+| `simbad_labelled_pca_features_path` | Path to labeled features CSV | Required |
 | `max_workers` | Number of worker processes | 4 |
+
+**SQL Query Capabilities:**
+The `input_df_sql` parameter supports full SQL queries including:
+- **SELECT**: Choose specific columns or use `SELECT *`
+- **WHERE**: Filter rows based on conditions
+- **ORDER BY**: Sort results by columns
+- **LIMIT**: Limit number of results
+- **Aggregate functions**: COUNT, SUM, AVG, etc.
+- **Subqueries**: Nested SELECT statements
+
+**Example SQL Queries:**
+```sql
+-- Select all columns with filtering
+SELECT * FROM input_df WHERE score_weighted_root_sumnorm >= 0.0001
+
+-- Select specific columns with ordering
+SELECT filename, score_weighted_root_sumnorm FROM input_df 
+WHERE score_weighted_root_sumnorm >= 0.0001 
+ORDER BY score_weighted_root_sumnorm DESC
+
+-- Limit results
+SELECT filename FROM input_df 
+WHERE score_weighted_root_sumnorm >= 0.0001 
+LIMIT 1000
+
+-- Complex filtering
+SELECT filename, score_weighted_root_sumnorm FROM input_df 
+WHERE score_weighted_root_sumnorm >= 0.0001 
+AND filename LIKE '%sector1%'
+ORDER BY score_weighted_root_sumnorm DESC
+```
 
 ## System Monitoring
 
@@ -258,11 +313,14 @@ YYYY-MM-DD HH:MM:SS [LEVEL] Message
 ```
 clara-cli/
 ├── clara_benchmark/
-│   ├── cli.py                 # Main CLI interface
+│   ├── cli.py                 # Main CLI interface (clean, focused logic)
 │   ├── tess_spoc_download/    # TESS data download modules
 │   ├── urf_scoring/          # Anomaly detection modules
 │   ├── cosine_similarity/    # Similarity matching modules
 │   └── utils/                # Utility functions
+│       ├── help_text.py      # Comprehensive CLI help documentation
+│       ├── logging.py        # Logging utilities
+│       └── system_stats.py   # System monitoring utilities
 ├── configs/                  # Configuration files
 ├── data/                     # Data storage
 ├── logs/                     # Log files
@@ -284,11 +342,17 @@ clara-cli/
 
 ## License
 
-[Add license information here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contributing
+The MIT License is a permissive license that allows for:
+- Commercial use
+- Modification
+- Distribution
+- Private use
 
-[Add contribution guidelines here]
+The only requirement is that the license and copyright notice be included in all copies or substantial portions of the software.
+
+
 
 ## Support
 
@@ -303,3 +367,4 @@ For issues and questions:
 - **v1.0.0**: Initial release with download, scoring, and similarity matching
 - **v1.1.0**: Added system monitoring and improved error handling
 - **v1.2.0**: Enhanced multiprocessing and configuration management
+- **v1.3.0**: Added dynamic config override system and comprehensive help documentation

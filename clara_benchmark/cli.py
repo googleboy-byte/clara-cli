@@ -12,6 +12,8 @@ import clara_benchmark.utils.suppress_warnings as suppress_warnings
 from clara_benchmark.cosine_similarity.cos_score import *
 from tqdm import tqdm
 from clara_benchmark.utils.help_text import *
+from clara_benchmark.phase_folding.pf import *
+import pandas as pd
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -75,6 +77,22 @@ def parse_args():
     )
     add_dynamic_config_arguments(sim_score_parser, "./configs/cosine_similarity_config.json")
     
+    phase_fold_parser = subparsers.add_parser(
+        "fold", 
+        help=PHASE_FOLD_HELP,
+        description=PHASE_FOLD_DESCRIPTION,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    phase_fold_parser.add_argument( 
+        "--config", 
+        type=str, 
+        required=False, 
+        default="./configs/phase_folding_config.json", 
+        help=get_config_help("phase folding")
+    )
+    add_dynamic_config_arguments(phase_fold_parser, "./configs/phase_folding_config.json")
+
+
     # Global meta message
     parser.add_argument(
         "--meta_message", 
@@ -85,6 +103,68 @@ def parse_args():
     )
 
     return parser.parse_args()
+
+
+def load_and_filter_dataframe(csv_path, sql_query, command_name="Command"):
+    """
+    Load CSV data into SQLite database and apply SQL filtering
+    
+    Args:
+        csv_path: Path to the CSV file
+        sql_query: SQL query to filter the data
+        command_name: Name of the command for logging
+    
+    Returns:
+        pandas.DataFrame: Filtered DataFrame
+    
+    Raises:
+        Exception: If SQL query execution fails
+    """
+    # Read the input df from CSV file and load into SQLite for pure SQL operations
+    input_df = pd.read_csv(csv_path)
+    log_main(f"{command_name} - Original input df shape: {input_df.shape}")
+    
+    # Create in-memory SQLite database and load DataFrame
+    import sqlite3
+    conn = sqlite3.connect(':memory:')
+    input_df.to_sql('input_df', conn, index=False, if_exists='replace')
+    
+    # Execute pure SQL query
+    log_main(f"{command_name} - Executing SQL query: {sql_query}")
+    
+    try:
+        filtered_df = pd.read_sql(sql_query, conn)
+        log_main(f"{command_name} - Filtered input df shape: {filtered_df.shape}")
+        return filtered_df
+    except Exception as e:
+        log_main(f"{command_name} - Error executing SQL query: {e}", error=True)
+        raise
+    finally:
+        conn.close()
+
+
+def str2bool(v):
+    """
+    Convert string to boolean for argparse
+    
+    Args:
+        v: String value to convert
+    
+    Returns:
+        bool: True for 'true', 'yes', '1', 'on'; False for 'false', 'no', '0', 'off'
+    
+    Raises:
+        argparse.ArgumentTypeError: If value cannot be converted to boolean
+    """
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1', 'on'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0', 'off'):
+        return False
+    else:
+        import argparse
+        raise argparse.ArgumentTypeError(f'Boolean value expected, got {v}')
 
 
 def add_dynamic_config_arguments(parser, config_path):
@@ -103,7 +183,7 @@ def add_dynamic_config_arguments(parser, config_path):
         for key, value in config.items():
             # Determine argument type based on value type
             if isinstance(value, bool):
-                arg_type = bool
+                arg_type = str2bool
             elif isinstance(value, int):
                 arg_type = int
             elif isinstance(value, float):
@@ -121,6 +201,26 @@ def add_dynamic_config_arguments(parser, config_path):
     except (FileNotFoundError, json.JSONDecodeError) as e:
         # If config file doesn't exist or is invalid, skip adding arguments
         pass
+
+
+def validate_config_keys(config, required_keys, command_name):
+    """
+    Validate that all required keys are present in the config
+    
+    Args:
+        config: Configuration dictionary
+        required_keys: List of required keys
+        command_name: Name of the command for logging
+    
+    Returns:
+        bool: True if all keys are present, False otherwise
+    """
+    if all(key in config for key in required_keys):
+        return True
+    else:
+        missing_keys = [key for key in required_keys if key not in config]
+        log_main(f"{command_name} config is missing required keys: {missing_keys}", error=True)
+        return False
 
 
 def load_config_with_overrides(config_path, args):
@@ -202,13 +302,9 @@ def main():
             # Load config with command-line overrides
             config = load_config_with_overrides(args.config, args)
             
-            for _, sector_config in config.items():
-                keys = sector_config.keys()
+            for sector_key, sector_config in config.items():
                 required_keys = ['sector_number', 'catalogues_folder', 'out_dir_tess', 'start_index', 'max_downloads', 'log_file', 'num_threads']
-                if all(key in keys for key in required_keys):
-                    pass
-                else:
-                    log_main(f"Sector {sector_config['sector_number']} is missing required keys", error=True)
+                if not validate_config_keys(sector_config, required_keys, f"Sector {sector_key}"):
                     continue
                 log_main(f"Downloading sector {sector_config['sector_number']} with config: {sector_config} ", stdout=True)
                 download_tess_sector_threaded(sector_number=sector_config['sector_number'],
@@ -227,10 +323,7 @@ def main():
             
             # check if all config keys are present with valid values
             required_keys = ['input_dirs', 'output_dir', 'max_workers', 'use_p3', 'use_p5', 'use_p9', 'calculate_wrss_p3p9']
-            if all(key in config for key in required_keys):
-                pass
-            else:
-                log_main(f"Config is missing required keys", error=True)
+            if not validate_config_keys(config, required_keys, "Score"):
                 return
 
             log_main(f"Config details: {config}")
@@ -283,10 +376,7 @@ def main():
 
             # check if all config keys are present with valid values
             required_keys = ['fits_dir', 'input_df_path', 'input_df_sql', 'output_dir', 'min_similarity_threshold', 'simbad_labelled_pca_model_path', 'simbad_labelled_pca_features_path', 'max_workers', 'save_label_groups']
-            if all(key in config for key in required_keys):
-                pass
-            else:
-                log_main(f"Config is missing required keys", error=True)
+            if not validate_config_keys(config, required_keys, "Similarity"):
                 return            
             log_main(f"Config details: {config}")
 
@@ -295,27 +385,16 @@ def main():
             os.makedirs(os.path.dirname(config['simbad_labelled_pca_model_path']), exist_ok=True)
             os.makedirs(os.path.dirname(config['simbad_labelled_pca_features_path']), exist_ok=True)
 
-            # read the input df from CSV file and load into SQLite for pure SQL operations
-            input_df = pd.read_csv(config['input_df_path'])
-            log_main(f"Original input df shape: {input_df.shape}")
-            
-            # Create in-memory SQLite database and load DataFrame
-            import sqlite3
-            conn = sqlite3.connect(':memory:')
-            input_df.to_sql('input_df', conn, index=False, if_exists='replace')
-            
-            # Execute pure SQL query
-            log_main(f"Executing SQL query: {config['input_df_sql']}")
-            
+                        # Load and filter data using SQL query
             try:
-                filtered_df = pd.read_sql(config['input_df_sql'], conn)
-                log_main(f"Filtered input df shape: {filtered_df.shape}")
+                filtered_df = load_and_filter_dataframe(
+                    csv_path=config['input_df_path'],
+                    sql_query=config['input_df_sql'],
+                    command_name="Similarity"
+                )
+                print(filtered_df.head())
             except Exception as e:
-                log_main(f"Error executing SQL query: {e}", error=True)
-                conn.close()
                 return
-            finally:
-                conn.close()
 
             # match the fits by cosine similarity using multiprocessing run cosine matching batch function
             results = run_cosine_matching_batch(filenames=list(set(filtered_df['filename'].tolist())),
@@ -330,13 +409,57 @@ def main():
             filtered_df = pd.concat([filtered_df, results], axis=1)
 
             # Apply label group filtering
-            filtered_df = filtered_df[filtered_df['label_group'].isin(config['save_label_groups'])]
+            # add option to check for "all" or "none" in save label groups
+            if config['save_label_groups'] == "all":
+                filtered_df = filtered_df
+            elif config['save_label_groups'] == "none":
+                filtered_df = filtered_df[filtered_df['label_group'].isna()]
+            else:
+                filtered_df = filtered_df[filtered_df['label_group'].isin(config['save_label_groups'])]
             
             # save the output df
             outfile = config['output_dir'] + 'cosine_similarity_scores_' + datetime.now().strftime("%Y%m%d_%H%M%S") + '.csv'
             filtered_df.to_csv(outfile, index=False)
 
             log_main(f"Cosine similarity matching complete. Results saved in {outfile} with {len(results)} matches. Label groups: {filtered_df['label_group'].value_counts()}")
+
+        elif args.command == "fold":
+            log_main(f"Phase folding with config: {args.config}")
+            # Load config with command-line overrides
+            config = load_config_with_overrides(args.config, args)
+            # check if all config keys are present with valid values
+            required_keys = ['input_df_path', 'output_dir', 'max_workers']
+            if not validate_config_keys(config, required_keys, "Phase folding"):
+                return
+
+            # Load and filter data using SQL query
+            try:
+                filtered_df = load_and_filter_dataframe(
+                    csv_path=config['input_df_path'],
+                    sql_query=config['input_df_sql'],
+                    command_name="Phase folding"
+                )
+                print(filtered_df.head())
+            except Exception as e:
+                return
+
+
+
+            # phase fold the fits
+            phase_fold_batch(input_df=filtered_df,
+                             fits_dir=config['fits_dir'],
+                             output_dir=config['output_dir'],
+                             min_power_threshold=config['min_power_threshold'],
+                             min_period_threshold=config['min_period_threshold'],
+                             max_period_threshold=config['max_period_threshold'],
+                             bins=config['bins'],
+                             show=config['show'],
+                             phase_shift=config['phase_shift'],
+                             column_name=config['column_name'],
+                             save=bool(config['save'])
+                             )
+
+            log_main(f"Phase folding complete. Results saved in {config['output_dir']}")
 
         else:
             print("No command specified. Use -h for help.")

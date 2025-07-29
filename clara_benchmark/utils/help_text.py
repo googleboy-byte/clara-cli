@@ -38,7 +38,7 @@ Configuration Override System:
     python -m clara_benchmark.cli sim --config ./custom_config.json --input_df_sql "SELECT * FROM input_df WHERE filename LIKE '%sector1%'"
 
   Automatic Type Detection:
-    - Boolean values: --use_p3 true, --use_p5 false
+    - Boolean values: --use_p3 true/false, --save false, --show true (also accepts: yes/no, 1/0, on/off)
     - Integer values: --max_workers 4, --num_threads 8
     - Float values: --min_similarity_threshold 0.6
     - String values: --output_dir "./custom_output/", --input_df_sql "SELECT * FROM input_df"
@@ -145,11 +145,48 @@ Configuration Override Support:
     --fits_dir "./custom_fits_directory/"
     --output_dir "./custom_output_directory/"
 
+  Label Group Filtering:
+    --save_label_groups ["planet_like", "binary_star"]  # Save specific label groups
+    --save_label_groups "all"                          # Save all matched objects regardless of label
+    --save_label_groups "none"                         # Save only unmatched objects (label_group is null)
+
   SQL Query Examples:
     --input_df_sql "SELECT filename FROM input_df WHERE score_weighted_root_sumnorm >= 0.001 LIMIT 100"
     --input_df_sql "SELECT * FROM input_df WHERE filename LIKE '%sector1%' AND score_weighted_root_sumnorm >= 0.0001"
     --input_df_sql "SELECT filename, score_weighted_root_sumnorm FROM input_df WHERE score_weighted_root_sumnorm >= 0.001 ORDER BY score_weighted_root_sumnorm DESC"
 """
+
+# Phase folding command help content
+PHASE_FOLD_HELP = "Phase fold light curves for periodic analysis"
+PHASE_FOLD_DESCRIPTION = """
+Perform phase folding analysis on TESS light curves to identify periodic patterns.
+This command folds light curves at specified periods to reveal periodic variations.
+
+Features:
+  - Phase folding at user-specified periods
+  - Multiple period analysis capabilities
+  - Configurable phase binning and smoothing
+  - Output generation for further analysis
+  - Multi-threaded processing for large datasets
+  - Real-time system monitoring during processing
+
+Process:
+  1. Load light curve data from FITS files
+  2. Calculate phase values for specified periods
+  3. Bin and fold light curves at each period
+  4. Generate phase-folded light curve plots
+  5. Save results for further analysis
+
+Configuration Override Support:
+  All phase folding parameters can be overridden via command-line arguments.
+
+  Example overrides:
+    --period 2.5                    # Override folding period
+    --phase_bins 50                 # Override number of phase bins
+    --output_dir "./folded_curves/" # Override output directory
+    --max_workers 8                 # Override parallel worker count
+"""
+
 
 # Argument help content
 CONFIG_HELP = "Path to JSON configuration file containing {command} parameters"

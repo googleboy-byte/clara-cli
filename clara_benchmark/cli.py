@@ -20,17 +20,85 @@ def parse_args():
     # run command
     run_parser = subparsers.add_parser("download", help="Run benchmark pipeline")
     run_parser.add_argument("--config", type=str, required=False, default="./configs/download_config.json", help="Path to JSON config file")
+    add_dynamic_config_arguments(run_parser, "./configs/download_config.json")
 
     anomaly_parser = subparsers.add_parser("score", help="Score anomalies")
     anomaly_parser.add_argument("--config", type=str, required=False, default="./configs/urf_anomaly_scoring_config.json", help="Path to JSON config file")
+    add_dynamic_config_arguments(anomaly_parser, "./configs/urf_anomaly_scoring_config.json")
 
     sim_score_parser = subparsers.add_parser("sim", help="Score anomalies")
     sim_score_parser.add_argument("--config", type=str, required=False, default="./configs/cosine_similarity_config.json", help="Path to JSON config file")
-
+    add_dynamic_config_arguments(sim_score_parser, "./configs/cosine_similarity_config.json")
     
     parser.add_argument("--meta_message", type=str, required=False, default="", help="Meta message for the run")
 
     return parser.parse_args()
+
+
+def add_dynamic_config_arguments(parser, config_path):
+    """
+    Dynamically add command-line arguments for all keys in a config file
+    
+    Args:
+        parser: ArgumentParser object to add arguments to
+        config_path: Path to the config file to read keys from
+    """
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        
+        # Add arguments for each config key
+        for key, value in config.items():
+            # Determine argument type based on value type
+            if isinstance(value, bool):
+                arg_type = bool
+            elif isinstance(value, int):
+                arg_type = int
+            elif isinstance(value, float):
+                arg_type = float
+            else:
+                arg_type = str
+            
+            # Add the argument
+            parser.add_argument(
+                f"--{key}", 
+                type=arg_type, 
+                required=False, 
+                help=f"Override {key} from config (default: {value})"
+            )
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        # If config file doesn't exist or is invalid, skip adding arguments
+        pass
+
+
+def load_config_with_overrides(config_path, args):
+    """
+    Load config from file and override with command-line arguments
+    
+    Args:
+        config_path: Path to config file
+        args: Parsed arguments object
+    
+    Returns:
+        dict: Updated config dictionary
+    """
+    # Load base config
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+    
+    # Override with command-line arguments if provided
+    for key, value in vars(args).items():
+        if value is not None and key in config:
+            config[key] = value
+            log_main(f"Overriding config {key} with command-line value: {value}")
+        elif value is not None and args.command == "download":
+            # For download command, check if the key exists in any sector config
+            for sector_key, sector_config in config.items():
+                if key in sector_config:
+                    sector_config[key] = value
+                    log_main(f"Overriding sector {sector_key} config {key} with command-line value: {value}")
+    
+    return config
 
 
 def system_stats_logger(stop_event, interval=5):
@@ -79,8 +147,9 @@ def main():
         if args.command == "download":
             log_main(f"Downloading with config: {args.config}")
             
-            with open(args.config, 'r') as f:
-                config = json.load(f)
+            # Load config with command-line overrides
+            config = load_config_with_overrides(args.config, args)
+            
             for _, sector_config in config.items():
                 keys = sector_config.keys()
                 required_keys = ['sector_number', 'catalogues_folder', 'out_dir_tess', 'start_index', 'max_downloads', 'log_file', 'num_threads']
@@ -101,8 +170,8 @@ def main():
         elif args.command == "score":
             log_main(f"Scoring anomalies with config: {args.config}")
 
-            with open(args.config, 'r') as f:
-                config = json.load(f)
+            # Load config with command-line overrides
+            config = load_config_with_overrides(args.config, args)
             
             # check if all config keys are present with valid values
             required_keys = ['input_dirs', 'output_dir', 'max_workers', 'use_p3', 'use_p5', 'use_p9', 'calculate_wrss_p3p9']
@@ -157,17 +226,16 @@ def main():
         elif args.command == "sim":
             log_main(f"Matching fits by cosine similarity with config: {args.config}")
 
-            with open(args.config, 'r') as f:
-                config = json.load(f)
+            # Load config with command-line overrides
+            config = load_config_with_overrides(args.config, args)
 
             # check if all config keys are present with valid values
-            required_keys = ['fits_dir', 'input_df_path', 'output_dir', 'min_similarity_threshold', 'simbad_labelled_pca_model_path', 'simbad_labelled_pca_features_path', 'max_workers', 'gt_wrss_threshold', "save_label_groups"]
+            required_keys = ['fits_dir', 'input_df_path', 'input_df_sql', 'output_dir', 'min_similarity_threshold', 'simbad_labelled_pca_model_path', 'simbad_labelled_pca_features_path', 'max_workers', 'save_label_groups']
             if all(key in config for key in required_keys):
                 pass
             else:
                 log_main(f"Config is missing required keys", error=True)
-                return
-            
+                return            
             log_main(f"Config details: {config}")
 
             # make sure all directories exist
@@ -175,28 +243,48 @@ def main():
             os.makedirs(os.path.dirname(config['simbad_labelled_pca_model_path']), exist_ok=True)
             os.makedirs(os.path.dirname(config['simbad_labelled_pca_features_path']), exist_ok=True)
 
-            # read the input df
+            # read the input df from CSV file and load into SQLite for pure SQL operations
             input_df = pd.read_csv(config['input_df_path'])
+            log_main(f"Original input df shape: {input_df.shape}")
+            
+            # Create in-memory SQLite database and load DataFrame
+            import sqlite3
+            conn = sqlite3.connect(':memory:')
+            input_df.to_sql('input_df', conn, index=False, if_exists='replace')
+            
+            # Execute pure SQL query
+            log_main(f"Executing SQL query: {config['input_df_sql']}")
+            
+            try:
+                filtered_df = pd.read_sql(config['input_df_sql'], conn)
+                log_main(f"Filtered input df shape: {filtered_df.shape}")
+            except Exception as e:
+                log_main(f"Error executing SQL query: {e}", error=True)
+                conn.close()
+                return
+            finally:
+                conn.close()
 
             # match the fits by cosine similarity using multiprocessing run cosine matching batch function
-            results = run_cosine_matching_batch(filenames=list(set(input_df[input_df['score_weighted_root_sumnorm'] >= config['gt_wrss_threshold']]['filename'].tolist())),
+            results = run_cosine_matching_batch(filenames=list(set(filtered_df['filename'].tolist())),
                                                 fits_dir=config['fits_dir'],
                                                 simbad_labelled_pca_model_path=config['simbad_labelled_pca_model_path'],
                                                 simbad_labelled_pca_features_path=config['simbad_labelled_pca_features_path'],
                                                 compute_func=computeLombScargleTessLC,
                                                 min_similarity_threshold=config['min_similarity_threshold'],
                                                 workers=config['max_workers'])
-            # add the results to the input df
-            input_df = pd.concat([input_df, results], axis=1)
+            
+            # add the results to the filtered df
+            filtered_df = pd.concat([filtered_df, results], axis=1)
 
-            input_df = input_df[input_df['label_group'].isin(config['save_label_groups'])]
+            # Apply label group filtering
+            filtered_df = filtered_df[filtered_df['label_group'].isin(config['save_label_groups'])]
             
             # save the output df
             outfile = config['output_dir'] + 'cosine_similarity_scores_' + datetime.now().strftime("%Y%m%d_%H%M%S") + '.csv'
-            input_df.to_csv(outfile, index=False)
+            filtered_df.to_csv(outfile, index=False)
 
-            log_main(f"Cosine similarity matching complete. Results saved in {outfile} with {len(results)} matches. Label groups: {input_df['label_group'].value_counts()}. GT WRSS threshold: {config['gt_wrss_threshold']}")
-
+            log_main(f"Cosine similarity matching complete. Results saved in {outfile} with {len(results)} matches. Label groups: {filtered_df['label_group'].value_counts()}")
 
         else:
             print("No command specified. Use -h for help.")

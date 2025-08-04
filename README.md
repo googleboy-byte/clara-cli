@@ -1,6 +1,6 @@
 # CLARA CLI - Astronomical Data Processing Pipeline
 
-A comprehensive command-line interface for downloading, processing, and analyzing TESS (Transiting Exoplanet Survey Satellite) light curve data with anomaly detection and similarity matching capabilities.
+A comprehensive command-line interface (in development) for downloading, processing, and analyzing TESS (Transiting Exoplanet Survey Satellite) light curve data with anomaly detection and similarity matching capabilities as presented in the research project in https://github.com/googleboy-byte/CLARA
 
 ## Overview
 

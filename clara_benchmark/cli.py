@@ -13,6 +13,8 @@ from clara_benchmark.cosine_similarity.cos_score import *
 from tqdm import tqdm
 from clara_benchmark.utils.help_text import *
 from clara_benchmark.phase_folding.pf import *
+from clara_benchmark.feature_extraction.fluxpowerstack import *
+from clara_benchmark.feature_extraction.advanced_features import *
 import pandas as pd
 
 def parse_args():
@@ -91,6 +93,21 @@ def parse_args():
         help=get_config_help("phase folding")
     )
     add_dynamic_config_arguments(phase_fold_parser, "./configs/phase_folding_config.json")
+    
+    feature_extraction_parser = subparsers.add_parser(
+        "features", 
+        help=FEATURE_EXTRACTION_HELP,
+        description=FEATURE_EXTRACTION_DESCRIPTION,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    feature_extraction_parser.add_argument(
+        "--config", 
+        type=str, 
+        required=False, 
+        default="./configs/feature_extraction_config.json", 
+        help=get_config_help("feature extraction")
+    )
+    add_dynamic_config_arguments(feature_extraction_parser, "./configs/feature_extraction_config.json") 
 
 
     # Global meta message
@@ -443,8 +460,6 @@ def main():
             except Exception as e:
                 return
 
-
-
             # phase fold the fits
             phase_fold_batch(input_df=filtered_df,
                              fits_dir=config['fits_dir'],
@@ -461,6 +476,144 @@ def main():
 
             log_main(f"Phase folding complete. Results saved in {config['output_dir']}")
 
+
+        elif args.command == "features":
+            log_main(f"Feature extraction with config: {args.config}")
+            # Load config with command-line overrides
+            config = load_config_with_overrides(args.config, args)
+            # check if all config keys are present with valid values
+            required_keys = ['input_df_path', 'output_dir', 'max_workers', 'fits_dir', 'filename_column_in_df', 'features']
+            if not validate_config_keys(config, required_keys, "Feature extraction"):
+                return
+            
+            # load the input df and filter in memory with sql
+            try:
+                filtered_df = load_and_filter_dataframe(
+                    csv_path=config['input_df_path'],
+                    sql_query=config['input_df_sql'],
+                    command_name="Feature extraction"
+                )
+                print(filtered_df.head())
+            except Exception as e:
+                log_main(f"Failed to load and filter DataFrame: {e}", error=True)
+                return
+            
+            # Validate FITS directory
+            if not os.path.exists(config['fits_dir']):
+                log_main(f"FITS directory {config['fits_dir']} does not exist", error=True)
+                return
+            
+            # Create output directory if it doesn't exist
+            os.makedirs(config['output_dir'], exist_ok=True)
+            
+            # Check if the filename column is in the df
+            if config['filename_column_in_df'] not in filtered_df.columns:
+                log_main(f"Filename column {config['filename_column_in_df']} not found in input df", error=True)
+                return
+            
+            # Check if all FITS files exist and log missing ones
+            fits_files = [os.path.join(config['fits_dir'], f) for f in filtered_df[config['filename_column_in_df']].tolist()]
+            missing_files = [f for f in fits_files if not os.path.exists(f)]
+            existing_files = [f for f in fits_files if os.path.exists(f)]
+            
+            if missing_files:
+                log_main(f"Warning: {len(missing_files)} FITS files do not exist", error=True)
+                # Log missing files to feature extraction log
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                feature_log_file = f"./logs/feature_extraction_{timestamp}.log"
+                for f in missing_files:
+                    log(f"Missing FITS file: {f}", feature_log_file, call_log_main=False)
+            
+            log_main(f"Found {len(existing_files)} existing FITS files out of {len(fits_files)} total")
+            
+            # Extract features based on the specified method
+            try:
+                if config['features'] == "fluxpowerstack":
+                    log_main(f"Extracting fluxpowerstack features with {config['max_workers']} workers")
+                    
+                    # Get optional parameters with defaults
+                    reduce_features = str2bool(config.get('reduce_features', 'false'))
+                    reduce_features_n_features = config.get('reduce_features_n_features', 50)
+                    
+                    result = features_fluxpowerstack_mp(
+                        df=filtered_df,
+                        fits_dir=config['fits_dir'],
+                        filename_column_in_df=config['filename_column_in_df'],
+                        output_dir=config['output_dir'],
+                        max_workers=config['max_workers'],
+                        reduce_features=reduce_features,
+                        reduce_features_n_features=reduce_features_n_features
+                    )
+                    
+                    if result:
+                        log_main(f"Fluxpowerstack feature extraction complete: {result}")
+                    else:
+                        log_main("Fluxpowerstack feature extraction failed", error=True)
+                        
+                elif config['features'] == "advanced_10_feature_set":
+                    log_main(f"Extracting advanced 10-feature set with {config['max_workers']} workers")
+                    
+                    # Get optional parameters with defaults
+                    desired_length = config.get('desired_length', None)
+                    reduce_features = str2bool(config.get('reduce_features', 'false'))
+                    reduce_features_n_features = config.get('reduce_features_n_features', 50)
+                    
+                    # Warn if PCA is requested for advanced features
+                    if reduce_features:
+                        log_main("Warning: PCA reduction is not available for advanced features. Ignoring reduce_features parameter.", error=True)
+                    
+                    result = features_advanced_10_feature_set(
+                        df=filtered_df,
+                        fits_dir=config['fits_dir'],
+                        filename_column_in_df=config['filename_column_in_df'],
+                        output_dir=config['output_dir'],
+                        max_workers=config['max_workers'],
+                        desired_length=desired_length,
+                        reduce_features=False,  # Force to False for advanced features
+                        reduce_features_n_features=reduce_features_n_features
+                    )
+                    
+                    if result:
+                        log_main(f"Advanced 10-feature set extraction complete: {result}")
+                    else:
+                        log_main("Advanced 10-feature set extraction failed", error=True)
+                        
+                elif config['features'] == "bin_means":
+                    log_main(f"Extracting bin_means (folded) features with {config['max_workers']} workers")
+                    
+                    # Get optional parameters with defaults
+                    desired_length = config.get('desired_length', None)
+                    reduce_features = str2bool(config.get('reduce_features', 'false'))
+                    reduce_features_n_features = config.get('reduce_features_n_features', 50)
+                    
+                    # Warn if PCA is requested for bin_means
+                    if reduce_features:
+                        log_main("Warning: PCA reduction is not available for bin_means features. Ignoring reduce_features parameter.", error=True)
+                    
+                    result = features_minbeans_folded(
+                        df=filtered_df,
+                        fits_dir=config['fits_dir'],
+                        filename_column_in_df=config['filename_column_in_df'],
+                        output_dir=config['output_dir'],
+                        max_workers=config['max_workers'],
+                        desired_length=desired_length
+                    )
+                    
+                    if result:
+                        log_main(f"Bin means feature extraction complete: {result}")
+                    else:
+                        log_main("Bin means feature extraction failed", error=True)
+                        
+                else:
+                    log_main(f"Unknown feature extraction method: {config['features']}", error=True)
+                    log_main(f"Available methods: fluxpowerstack, bin_means, advanced_10_feature_set", error=True)
+                    return
+                    
+            except Exception as e:
+                log_main(f"Feature extraction failed with error: {e}", error=True)
+                return
+                
+            log_main(f"Feature extraction complete. Results saved in {config['output_dir']}")
         else:
             print("No command specified. Use -h for help.")
     

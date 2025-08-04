@@ -4,7 +4,7 @@ from lightkurve import LightCurve
 from astropy.timeseries import LombScargle, BoxLeastSquares
 from scipy.signal import find_peaks, correlate
 from scipy.ndimage import gaussian_filter1d
-import astrodata_helpers.clara2_phase_fold as c2pf
+import clara_benchmark.clara.astrodata_helpers.clara2_phase_fold as c2pf
 
 
 def count_ls_peaks(time, flux, max_points=8000, min_period=0.2, max_period=20, power_prominence=0.05):
@@ -130,5 +130,5 @@ def extract_features_from_fits(fpath, min_period=0.2, max_period=20):
         ]
 
     except Exception as e:
-        print(f"⚠️ Failed to process {fpath}: {e}")
+        # print(f"⚠️ Failed to process {fpath}: {e}")
         return None

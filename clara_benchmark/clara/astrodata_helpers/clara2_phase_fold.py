@@ -49,7 +49,7 @@ def phase_fold(lc_fits_path,
     peak_power = np.max(power)
 
     if peak_power < ls_power_thresh:
-        print(f"⚠️ Skipping {os.path.basename(lc_fits_path)} due to low power: {peak_power:.4f}")
+        # print(f"⚠️ Skipping {os.path.basename(lc_fits_path)} due to low power: {peak_power:.4f}")
         return
 
     # --- Phase Fold ---

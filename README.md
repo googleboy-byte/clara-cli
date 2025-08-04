@@ -1,6 +1,6 @@
 # CLARA CLI - Astronomical Data Processing Pipeline
 
-A comprehensive command-line interface (in development) for downloading, processing, and analyzing TESS (Transiting Exoplanet Survey Satellite) light curve data with anomaly detection and similarity matching capabilities as presented in the research project in https://github.com/googleboy-byte/CLARA
+A comprehensive command-line interface for downloading, processing, and analyzing TESS (Transiting Exoplanet Survey Satellite) light curve data with anomaly detection and similarity matching capabilities.
 
 ## Overview
 
@@ -126,6 +126,71 @@ python -m clara_benchmark.cli sim --config ./configs/cosine_similarity_config.js
 }
 ```
 
+#### 4. Feature Extraction
+Extract comprehensive feature sets from TESS light curves for machine learning applications:
+```bash
+python -m clara_benchmark.cli features --config ./configs/feature_extraction_config.json
+```
+
+**Configuration Example:**
+```json
+{
+    "fits_dir": "./data/fits_files/1/",
+    "input_df_path": "./results/anomaly_scores/wrss_p3p9_20250719_123442.csv",
+    "input_df_sql": "SELECT * FROM input_df WHERE score_weighted_root_sumnorm >= 0.0001",
+    "output_dir": "./results/features/",
+    "max_workers": 4,
+    "features": "fluxpowerstack",
+    "reduce_features": "true",
+    "reduce_features_n_features": 50,
+    "filename_column_in_df": "filename"
+}
+```
+
+**Available Feature Extraction Methods:**
+
+1. **FLUXPOWERSTACK** (Recommended for ML):
+   - Extracts 4000-dimensional feature vectors
+   - Combines flux time series (3000 points) + Lomb-Scargle power spectrum (1000 points)
+   - Optimized for machine learning applications
+   - Supports PCA reduction for dimensionality reduction
+
+2. **BIN_MEANS** (Phase-folded features):
+   - Extracts phase-folded binned flux features
+   - Useful for periodic pattern analysis
+   - Configurable bin count and desired length
+   - Normalized feature vectors
+
+3. **ADVANCED_10_FEATURE_SET** (Astronomical features):
+   - Extracts 10 sophisticated astronomical features:
+     * Transit depth and width
+     * Baseline standard deviation
+     * Asymmetry and sharpness indices
+     * Autocorrelation strength
+     * Transit count and BLS parameters
+   - Optimized for astronomical classification
+
+**Feature Extraction Examples:**
+```bash
+# Basic fluxpowerstack extraction
+python -m clara_benchmark.cli features --config ./configs/feature_extraction_config.json
+
+# Advanced features with custom SQL filtering
+python -m clara_benchmark.cli features --config ./configs/feature_extraction_config.json --features "advanced_10_feature_set" --input_df_sql "SELECT filename FROM input_df WHERE score_weighted_root_sumnorm >= 0.001 LIMIT 100"
+
+# Fluxpowerstack with PCA reduction
+python -m clara_benchmark.cli features --config ./configs/feature_extraction_config.json --features "fluxpowerstack" --reduce_features true --reduce_features_n_features 25
+
+# Bin means with custom length
+python -m clara_benchmark.cli features --config ./configs/feature_extraction_config.json --features "bin_means" --desired_length 100 --max_workers 2
+```
+
+#### 5. Phase Folding
+Perform phase folding analysis on TESS light curves:
+```bash
+python -m clara_benchmark.cli fold --config ./configs/phase_folding_config.json
+```
+
 ### Global Options
 - `--meta_message`: Add a descriptive message to the run logs
 - `--config`: Specify custom configuration file path
@@ -183,10 +248,59 @@ python -m clara_benchmark.cli sim --input_df_sql "SELECT * FROM input_df WHERE s
 | `input_df_sql` | Full SQL query to select and filter input data | Required |
 | `output_dir` | Output directory for results | Required |
 | `min_similarity_threshold` | Minimum similarity score | 0.6 |
-| `save_label_groups` | Label groups to save | Required |
+| `save_label_groups` | Label groups to save (array, "all", or "none") | Required |
 | `simbad_labelled_pca_model_path` | Path to PCA model file | Required |
 | `simbad_labelled_pca_features_path` | Path to labeled features CSV | Required |
 | `max_workers` | Number of worker processes | 4 |
+
+### Feature Extraction Configuration
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `fits_dir` | Directory containing FITS files | Required |
+| `input_df_path` | Path to input CSV file | Required |
+| `input_df_sql` | Full SQL query to select and filter input data | Required |
+| `output_dir` | Output directory for results | Required |
+| `max_workers` | Number of worker processes | 4 |
+| `features` | Feature extraction method ("fluxpowerstack", "bin_means", "advanced_10_feature_set") | Required |
+| `reduce_features` | Enable PCA reduction (only for fluxpowerstack) | "false" |
+| `reduce_features_n_features` | Number of PCA components to keep | 50 |
+| `desired_length` | Desired feature vector length (for bin_means) | null |
+| `filename_column_in_df` | Column name containing filenames | Required |
+
+**Feature Extraction Methods:**
+
+**FLUXPOWERSTACK:**
+- **Output**: 4000-dimensional feature vectors (.npy format)
+- **Features**: Flux time series (3000 points) + Lomb-Scargle power spectrum (1000 points)
+- **PCA Support**: Yes (recommended for large datasets)
+- **Use Case**: Machine learning applications, anomaly detection
+
+**BIN_MEANS:**
+- **Output**: Phase-folded binned flux features (.npy format)
+- **Features**: Normalized binned flux values from phase folding
+- **PCA Support**: No
+- **Use Case**: Periodic pattern analysis, transit detection
+
+**ADVANCED_10_FEATURE_SET:**
+- **Output**: 10 astronomical features (.npy format)
+- **Features**: Transit depth, width, baseline std, asymmetry, sharpness, autocorr strength, transit count, BLS parameters
+- **PCA Support**: No
+- **Use Case**: Astronomical classification, object characterization
+
+**Output File Structure:**
+```
+./results/features/
+├── fluxpowerstack/
+│   ├── fluxpowerstack_features_YYYYMMDD_HHMMSS.npy
+│   ├── fluxpowerstack_features_YYYYMMDD_HHMMSS.txt
+│   └── fluxpowerstack_features_YYYYMMDD_HHMMSS_pca_25.npy (if PCA enabled)
+├── bin_means/
+│   ├── bin_means_features_YYYYMMDD_HHMMSS.npy
+│   └── bin_means_filenames_YYYYMMDD_HHMMSS.txt
+└── advanced_features/
+    ├── advanced_features_YYYYMMDD_HHMMSS.npy
+    └── advanced_filenames_YYYYMMDD_HHMMSS.txt
+```
 
 **SQL Query Capabilities:**
 The `input_df_sql` parameter supports full SQL queries including:
@@ -196,6 +310,12 @@ The `input_df_sql` parameter supports full SQL queries including:
 - **LIMIT**: Limit number of results
 - **Aggregate functions**: COUNT, SUM, AVG, etc.
 - **Subqueries**: Nested SELECT statements
+
+**Label Group Filtering Options:**
+The `save_label_groups` parameter supports three filtering modes:
+- **Array of labels**: `["planet_like", "binary_star"]` - Save only objects matching specific labels
+- **"all"**: Save all matched objects regardless of their label group
+- **"none"**: Save only unmatched objects (where label_group is null/NaN)
 
 **Example SQL Queries:**
 ```sql
@@ -247,6 +367,13 @@ System statistics are logged every 5 seconds to `./logs/system_status.log`.
 - Filtered by label groups and WRSS threshold
 - Results stored in configured output directory
 
+### Feature Extraction Output
+- **Fluxpowerstack**: `.npy` feature files and `.txt` filename lists in `./results/features/fluxpowerstack/`
+- **Bin Means**: `.npy` feature files and `.txt` filename lists in `./results/features/bin_means/`
+- **Advanced Features**: `.npy` feature files and `.txt` filename lists in `./results/features/advanced_features/`
+- **PCA-reduced features**: Available for fluxpowerstack only with `_pca_N.npy` suffix
+- **Feature extraction logs**: `./logs/feature_extraction*.log` and `./logs/advanced_features.log`
+
 ## Logging
 
 ### Log Files
@@ -254,6 +381,8 @@ System statistics are logged every 5 seconds to `./logs/system_status.log`.
 - **System Status**: `./logs/system_status.log` - System resource monitoring
 - **Download Log**: `./logs/download_tess_lc.log` - TESS download operations
 - **Cosine Similarity**: `./logs/cosine_sim.log` - Similarity matching details
+- **Feature Extraction**: `./logs/feature_extraction*.log` - Feature extraction details
+- **Advanced Features**: `./logs/advanced_features.log` - Advanced feature extraction details
 
 ### Log Format
 ```
@@ -272,6 +401,7 @@ YYYY-MM-DD HH:MM:SS [LEVEL] Message
 - **Download**: Use 4-8 threads depending on network bandwidth
 - **Scoring**: Use 4-8 workers based on CPU cores
 - **Similarity**: Use 4-8 workers for multiprocessing
+- **Feature Extraction**: Use 4-8 workers for multiprocessing
 - **Memory**: Ensure sufficient RAM for large datasets (8GB+ recommended)
 
 ### Scaling Considerations

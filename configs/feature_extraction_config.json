@@ -1,0 +1,13 @@
+{
+    "fits_dir": "./data/fits_files/1/",
+    "input_df_path": "./results/anomaly_scores/wrss_p3p9_20250719_123442.csv",
+    "input_df_sql": "SELECT * FROM input_df WHERE score_weighted_root_sumnorm >= 0.0001",
+    "output_dir": "./results/features/",
+    "max_workers": 4,    
+    "features": "fluxpowerstack",
+    "available_feature":["fluxpowerstack", "bin_means", "advanced_10_feature_set"],
+    "reduce_features": "true",
+    "reduce_features_n_features": 50,
+    "filename_column_in_df": "filename",
+    "features_on_folded_lc": "true"
+}   

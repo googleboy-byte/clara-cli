@@ -1,0 +1,15 @@
+{
+    "input_df_path": "./results/cosine_similarity_scores_20250729_182353.csv",
+    "output_dir": "./results/phase_folded_results/",
+    "fits_dir": "./data/fits_files/1/",
+    "input_df_sql": "SELECT filename FROM input_df WHERE label_group = 'planet_like'",
+    "max_workers": 4,
+    "min_power_threshold": 0.05,
+    "min_period_threshold": 0.5,
+    "max_period_threshold": 20,
+    "bins": 100,
+    "save": true,
+    "show": false,
+    "phase_shift": 0.0,
+    "column_name": "filename"
+}

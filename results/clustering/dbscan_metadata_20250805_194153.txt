@@ -1,0 +1,10 @@
+Clustering Algorithm: DBSCAN
+Number of Clusters: 2
+Number of Noise Points: 54
+Silhouette Score: 0.112
+Calinski-Harabasz Score: 45.565
+Davies-Bouldin Score: 1.770
+Cluster Sizes:
+  Noise (label -1): 54 curves
+  Cluster 0: 24 curves
+  Cluster 1: 33 curves

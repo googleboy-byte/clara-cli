@@ -585,6 +585,7 @@ def main():
                     desired_length = config.get('desired_length', None)
                     reduce_features = str2bool(config.get('reduce_features', 'false'))
                     reduce_features_n_features = config.get('reduce_features_n_features', 50)
+                    use_dtw = str2bool(config.get('use_dtw', 'false'))
                     
                     # Warn if PCA is requested for bin_means
                     if reduce_features:
@@ -596,7 +597,8 @@ def main():
                         filename_column_in_df=config['filename_column_in_df'],
                         output_dir=config['output_dir'],
                         max_workers=config['max_workers'],
-                        desired_length=desired_length
+                        desired_length=desired_length,
+                        use_dtw=use_dtw
                     )
                     
                     if result:

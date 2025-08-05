@@ -10,7 +10,7 @@ import warnings
 # Suppress numpy warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="numpy")
 
-def features_minbeans_folded(df, fits_dir, filename_column_in_df, output_dir, max_workers=4, desired_length=None):
+def features_minbeans_folded(df, fits_dir, filename_column_in_df, output_dir, max_workers=4, desired_length=None, use_dtw=False):
     # Create subdirectory for bin_means features
     bin_means_output_dir = os.path.join(output_dir, "bin_means")
     os.makedirs(bin_means_output_dir, exist_ok=True)
@@ -25,6 +25,7 @@ def features_minbeans_folded(df, fits_dir, filename_column_in_df, output_dir, ma
     log(f"Output directory: {bin_means_output_dir}", feature_log_file, call_log_main=False)
     log(f"Max workers: {max_workers}", feature_log_file, call_log_main=False)
     log(f"Desired length: {desired_length}", feature_log_file, call_log_main=False)
+    log(f"Use DTW: {use_dtw}", feature_log_file, call_log_main=False)
     
     filenames = df[filename_column_in_df].tolist()
     log(f"Processing {len(filenames)} files", feature_log_file, call_log_main=True)
@@ -81,6 +82,34 @@ def features_minbeans_folded(df, fits_dir, filename_column_in_df, output_dir, ma
         for filename in valid_filenames:
             f.write(filename + "\n")
     log(f"Saved bin_means filenames to: {filenames_save_path}", feature_log_file, call_log_main=True)
+    
+    # Calculate and save DTW matrix if requested
+    if use_dtw:
+        log(f"Calculating DTW matrix for {len(features)} features", feature_log_file, call_log_main=True)
+        try:
+            from dtaidistance import dtw
+            
+            n = len(features)
+            D = np.zeros((n, n))
+            
+            # Compute pairwise DTW distances
+            for i in range(n):
+                if i % 10 == 0:  # Log progress every 10 iterations
+                    log(f"DTW calculation progress: {i}/{n}", feature_log_file, call_log_main=False)
+                for j in range(i+1, n):
+                    d = dtw.distance_fast(features[i], features[j])
+                    D[i, j] = D[j, i] = d
+            
+            # Save DTW matrix
+            dtw_save_path = os.path.join(bin_means_output_dir, f"bin_means_dtw_matrix_{timestamp}.npy")
+            np.save(dtw_save_path, D)
+            log(f"Saved DTW matrix to: {dtw_save_path}", feature_log_file, call_log_main=True)
+            log(f"DTW matrix shape: {D.shape}", feature_log_file, call_log_main=False)
+            
+        except ImportError:
+            log("Warning: dtaidistance package not found. DTW matrix calculation skipped.", feature_log_file, call_log_main=True, error=True)
+        except Exception as e:
+            log(f"Error calculating DTW matrix: {str(e)}", feature_log_file, call_log_main=True, error=True)
     
     log(f"Feature matrix shape: {np.array(features).shape}", feature_log_file, call_log_main=False)
     return features_save_path
@@ -149,8 +178,17 @@ def features_fluxpowerstack_mp(df, fits_dir, filename_column_in_df, output_dir, 
     if reduce_features:
         log(f"Applying PCA reduction to {reduce_features_n_features} components", feature_log_file, call_log_main=True)
         from sklearn.decomposition import PCA
-        pca = PCA(n_components=reduce_features_n_features)
         feature_array = np.array(feature_list)
+        
+        # Adaptive PCA: adjust n_components if we have fewer samples than requested
+        n_samples = len(feature_list)
+        if reduce_features_n_features >= n_samples:
+            original_components = reduce_features_n_features
+            reduce_features_n_features = min(n_samples - 1, feature_array.shape[1])
+            log(f"Adapting PCA: {n_samples} samples available, reducing from {original_components} to {reduce_features_n_features} components", 
+                feature_log_file, call_log_main=True)
+        
+        pca = PCA(n_components=reduce_features_n_features)
         feature_array = pca.fit_transform(feature_array)
         log(f"PCA reduction complete. Explained variance ratio: {sum(pca.explained_variance_ratio_):.3f}", 
             feature_log_file, call_log_main=False)

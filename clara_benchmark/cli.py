@@ -109,6 +109,22 @@ def parse_args():
     )
     add_dynamic_config_arguments(feature_extraction_parser, "./configs/feature_extraction_config.json") 
 
+    # Clustering command
+    clustering_parser = subparsers.add_parser(
+        "clustering", 
+        help=CLUSTERING_HELP,
+        description=CLUSTERING_DESCRIPTION,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    clustering_parser.add_argument(
+        "--config", 
+        type=str, 
+        required=False, 
+        default="./configs/clustering_config.json", 
+        help=get_config_help("clustering")
+    )
+    add_dynamic_config_arguments(clustering_parser, "./configs/clustering_config.json")
+
 
     # Global meta message
     parser.add_argument(
@@ -616,6 +632,55 @@ def main():
                 return
                 
             log_main(f"Feature extraction complete. Results saved in {config['output_dir']}")
+        elif args.command == "clustering":
+            # Load clustering configuration
+            config_path = args.config if args.config else "./configs/clustering_config.json"
+            config = load_config_with_overrides(config_path, args)
+            
+            # Validate required keys for clustering
+            required_keys = ["features_path", "filenames_path", "output_dir", "cluster_algorithm"]
+            if not validate_config_keys(config, required_keys, "Clustering"):
+                return
+            
+            log_main(f"Starting clustering analysis")
+            
+            try:
+                from clara_benchmark.clustering.clustering_utils import cluster_features
+                
+                cluster_algorithm = config.get('cluster_algorithm', 'kmeans')
+                preprocessing = config.get('preprocessing', 'standard')
+                is_distance_matrix = str2bool(config.get('is_distance_matrix', 'false'))
+                
+                log_main(f"Clustering algorithm: {cluster_algorithm}")
+                log_main(f"Preprocessing method: {preprocessing}")
+                log_main(f"Using distance matrix: {is_distance_matrix}")
+                
+                # Remove known keys to avoid duplicate kwargs
+                known_keys = ["features_path", "filenames_path", "output_dir", "cluster_algorithm", "preprocessing", "config", "is_distance_matrix"]
+                algo_kwargs = {k: v for k, v in config.items() if k not in known_keys}
+                
+                # Perform clustering
+                results = cluster_features(
+                    features_path=config['features_path'],
+                    filenames_path=config['filenames_path'],
+                    output_dir=config['output_dir'],
+                    cluster_algorithm=cluster_algorithm,
+                    preprocessing=preprocessing,
+                    is_distance_matrix=is_distance_matrix,
+                    **algo_kwargs
+                )
+                
+                if results:
+                    log_main(f"Clustering complete. Results saved in {config['output_dir']}")
+                    # Log summary
+                    for alg, result in results.items():
+                        log_main(f"{alg}: {result['n_clusters']} clusters, silhouette={result.get('silhouette', 'N/A'):.3f}")
+                else:
+                    log_main("Clustering failed", error=True)
+                    
+            except Exception as e:
+                log_main(f"Clustering failed with error: {e}", error=True)
+                return
         else:
             print("No command specified. Use -h for help.")
     

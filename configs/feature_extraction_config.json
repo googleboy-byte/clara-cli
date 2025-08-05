@@ -9,5 +9,6 @@
     "reduce_features": "true",
     "reduce_features_n_features": 50,
     "filename_column_in_df": "filename",
-    "features_on_folded_lc": "true"
+    "features_on_folded_lc": "true",
+    "use_dtw": "false"
 }   

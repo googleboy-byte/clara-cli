@@ -1,0 +1,17 @@
+{
+    "features_path": "./results/features/bin_means/bin_means_features_20250805_075016.npy",
+    "filenames_path": "./results/features/bin_means/bin_means_filenames_20250805_075016.txt",
+    "output_dir": "./results/clustering/",
+    "cluster_algorithm": "dbscan",
+    "preprocessing": "standard",
+    "is_distance_matrix": "false",
+    "n_clusters": 3,
+    "eps": 0.8,
+    "min_samples": 3,
+    "min_cluster_size": 10,
+    "n_components": 3,
+    "covariance_type": "full",
+    "weight_concentration_prior_type": "dirichlet_process",
+    "weight_concentration_prior": 0.1,
+    "random_state": 42
+} 

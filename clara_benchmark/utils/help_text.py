@@ -187,6 +187,123 @@ Configuration Override Support:
     --max_workers 8                 # Override parallel worker count
 """
 
+# Feature extraction command help content
+FEATURE_EXTRACTION_HELP = "Extract features from TESS light curves for machine learning"
+FEATURE_EXTRACTION_DESCRIPTION = """
+Extract comprehensive feature sets from TESS light curves for machine learning applications.
+This command provides multiple feature extraction methods optimized for different analysis tasks.
+
+Features:
+  - Multiple feature extraction methods (fluxpowerstack, bin_means, advanced_10_feature_set)
+  - Multi-threaded processing for large datasets
+  - PCA-based feature reduction capabilities
+  - Comprehensive logging and error handling
+  - Real-time system monitoring during processing
+  - SQL-based input filtering and selection
+
+Available Feature Extraction Methods:
+
+1. FLUXPOWERSTACK (Recommended for ML):
+   - Extracts 4000-dimensional feature vectors
+   - Combines flux time series (3000 points) + Lomb-Scargle power spectrum (1000 points)
+   - Optimized for machine learning applications
+   - Supports PCA reduction for dimensionality reduction
+
+2. BIN_MEANS (Phase-folded features):
+   - Extracts phase-folded binned flux features
+   - Useful for periodic pattern analysis
+   - Configurable bin count and desired length
+   - Normalized feature vectors
+
+3. ADVANCED_10_FEATURE_SET (Astronomical features):
+   - Extracts 10 sophisticated astronomical features:
+     * Transit depth and width
+     * Baseline standard deviation
+     * Asymmetry and sharpness indices
+     * Autocorrelation strength
+     * Transit count and BLS parameters
+   - Optimized for astronomical classification
+   - Supports PCA reduction
+
+Process:
+  1. Load and filter input data using SQL queries
+  2. Validate FITS file existence and accessibility
+  3. Extract features using selected method
+  4. Apply optional PCA reduction if requested
+  5. Save results as CSV with feature columns
+
+Configuration Override Support:
+  All feature extraction parameters can be overridden via command-line arguments.
+  SQL queries can be customized for complex filtering and selection.
+
+  Example overrides:
+    --features "fluxpowerstack"                    # Select feature extraction method
+    --max_workers 8                               # Override parallel worker count
+    --reduce_features true                        # Enable PCA reduction
+    --reduce_features_n_features 25               # Set PCA components
+    --desired_length 100                         # Set feature vector length (bin_means)
+    --input_df_sql "SELECT * FROM input_df WHERE score_weighted_root_sumnorm >= 0.001"
+
+  Feature Extraction Methods:
+    --features "fluxpowerstack"                   # 4000-dim flux + power spectrum features
+    --features "bin_means"                        # Phase-folded binned flux features
+    --features "advanced_10_feature_set"          # 10 astronomical features
+
+  PCA Reduction (for fluxpowerstack and advanced_10_feature_set):
+    --reduce_features true                        # Enable PCA reduction
+    --reduce_features_n_features 50               # Number of PCA components to keep
+
+  SQL Query Examples:
+    --input_df_sql "SELECT filename FROM input_df WHERE score_weighted_root_sumnorm >= 0.001 LIMIT 100"
+    --input_df_sql "SELECT * FROM input_df WHERE filename LIKE '%sector1%' AND score_weighted_root_sumnorm >= 0.0001"
+    --input_df_sql "SELECT filename, score_weighted_root_sumnorm FROM input_df WHERE score_weighted_root_sumnorm >= 0.001 ORDER BY score_weighted_root_sumnorm DESC"
+
+Output Files:
+  - CSV files with feature columns and filename
+  - Timestamped filenames for version control
+  - Separate feature extraction logs for detailed monitoring
+  - Feature statistics and processing summaries
+"""
+
+CLUSTERING_HELP = "Perform clustering analysis on extracted features"
+
+CLUSTERING_DESCRIPTION = """
+Clustering Analysis Command
+
+This command performs clustering analysis on extracted features using various algorithms:
+- KMeans: Partition-based clustering with specified number of clusters
+- DBSCAN: Density-based clustering with eps and min_samples parameters
+- HDBSCAN: Hierarchical density-based clustering (requires hdbscan package)
+- GaussianMixture: Probabilistic clustering with mixture models
+- BayesianGaussianMixture: Bayesian mixture models with automatic component selection
+
+Usage Examples:
+  # Basic clustering with all algorithms
+  python -m clara_benchmark.cli clustering --config ./configs/clustering_config.json
+
+  # Clustering with specific algorithms
+  python -m clara_benchmark.cli clustering --algorithms "kmeans,dbscan" --n_clusters 5
+
+  # Clustering with custom parameters
+  python -m clara_benchmark.cli clustering --eps 0.8 --min_samples 3 --preprocessing "robust"
+
+Configuration Overrides:
+  --features_path: Path to .npy features file
+  --filenames_path: Path to .txt filenames file
+  --output_dir: Output directory for clustering results
+  --algorithms: Comma-separated list of algorithms to use
+  --preprocessing: Preprocessing method (standard, minmax, robust, none)
+  --n_clusters: Number of clusters for KMeans/GMM/BGMM
+  --eps: Epsilon parameter for DBSCAN/HDBSCAN
+  --min_samples: Minimum samples for DBSCAN/HDBSCAN
+  --min_cluster_size: Minimum cluster size for HDBSCAN
+
+Output Files:
+  - clustering_summary_YYYYMMDD_HHMMSS.csv: Summary of all algorithms
+  - {algorithm}_labels_YYYYMMDD_HHMMSS.csv: Cluster labels for each algorithm
+  - {algorithm}_filenames_labels_YYYYMMDD_HHMMSS.csv: Filenames with cluster labels
+  - clustering_comparison_YYYYMMDD_HHMMSS.png: Comparison plots of clustering metrics
+"""
 
 # Argument help content
 CONFIG_HELP = "Path to JSON configuration file containing {command} parameters"
